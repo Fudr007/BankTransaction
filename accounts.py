@@ -1,66 +1,56 @@
 import threading
-from command import command
 
 class AccountError(Exception):
     pass
 
 class Account:
+    """
+    Class representing an account
+    """
     def __init__(self, acc_id):
-        self.set_acc_id(acc_id)
+        self._acc_id = acc_id
         self._balance = 0
-        self._lock = threading.Lock()
+        self.lock = threading.Lock()
 
     def set_acc_id(self, acc_id):
         if type(acc_id) is not int:
-            raise AccountError("Account ID must be an integer")
-        if acc_id < 0:
-            raise AccountError("Account ID must be positive number")
-
+            raise AccountError('Account ID must be an integer')
+        if acc_id<0:
+            raise AccountError('Account ID cannot be negative')
         self._acc_id = acc_id
 
     def get_id(self):
         return self._acc_id
 
-    @command("Withdraw")
     def withdraw(self, amount):
+        """
+        Withdraws the amount of money from the account
+        :param amount: amount to withdraw
+        :return: True if everything is fine
+        """
         if type(amount) is not int:
             raise AccountError('Amount must be a number')
-        with self._lock:
-            if amount > self._balance:
-                raise AccountError('Cant withdraw more than your is on your account')
-            self._balance -= amount
+        if amount > self._balance:
+            raise AccountError('Cant withdraw more than your is on your account')
 
-    @command("Deposit")
+        self._balance -= amount
+
+        return True
+
     def deposit(self, amount):
+        """
+        Deposits the amount of money from the account
+        :param amount: amount to deposit
+        :return: True if everything is fine
+        """
         if type(amount) is not int:
             raise AccountError('Amount must be a number')
-        with self._lock:
-            self._balance += amount
 
-    @command("Get balance")
+        if amount < 0:
+            raise AccountError('Amount cannot be negative')
+
+        self._balance += amount
+        return True
+
     def get_balance(self):
         return self._balance
-
-class BankError(Exception):
-    pass
-
-class Bank:
-    def __init__(self):
-        self.accounts = {}
-
-    @command("Make account")
-    def add_new_account(self, acc_id):
-        if type(acc_id) is not int:
-            raise AccountError("Account ID must be an integer")
-        if acc_id in self.accounts:
-            raise BankError("Account with this id already exists")
-
-        acc = Account(acc_id)
-        self.accounts[acc.get_id()] = acc
-
-    @command("Delete account")
-    def del_account(self, acc_id):
-        if acc_id in self.accounts:
-            del self.accounts[acc_id]
-        else:
-            raise AccountError('Account with this id was not found in this bank')
