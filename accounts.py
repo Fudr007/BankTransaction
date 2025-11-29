@@ -88,13 +88,16 @@ class AccountList():
         self.accounts[acc.get_id()] = acc
 
     def get_index(self, index):
-        now_i = 0
+        now_i = 1
         for account in self.accounts.values():
             if now_i == index:
                 return account
             now_i += 1
 
         raise AccountError('Account with such index does not exist')
+
+    def __iter__(self):
+        return iter(self.accounts.values())
 
     def to_dict(self):
         return {
