@@ -1,6 +1,5 @@
 import threading
 import time
-from subprocess import check_call
 
 from accounts import Account, AccountError
 
@@ -47,20 +46,13 @@ class Transaction:
         Thread safe executes the transaction
         :return: True if everything is fine
         """
-        acc1, acc2 = sorted([self.from_account, self.to_account], key=lambda x: x.get_id())
-        time.sleep(10)
+        acc1, acc2 = sorted([self.from_account, self.to_account], key=lambda x: x.get_id()) #deadlock
         with acc1.lock:
             with acc2.lock:
                 if self.from_account.withdraw(self.amount):
-                    #print("Withdrawn from account"+str(self.from_account.get_id()))
-                    #print(str(self.from_account.get_id())+" "+str(self.from_account.get_balance()))
-                    time.sleep(10)
                     self.to_account.deposit(self.amount)
-                    #print("Deposit to account" + str(self.from_account.get_id()))
-                    #print(str(self.to_account.get_id()) + " " + str(self.to_account.get_balance())
 
         return True
-
 
 class Deposit:
     """
@@ -87,50 +79,6 @@ class Deposit:
         Thread safe executes the deposit transaction
         :return: True if everything is fine
         """
-        time.sleep(10)
         with self.to_account.lock:
             self.to_account.deposit(self.amount)
-        #print("Deposit successful"+str(self.to_account.get_balance()))
         return True
-
-
-def transaction_make(account1, account2=None):
-    """
-    Makes a transaction in new thread with user input and starts the thread/transaction
-    :param account1: account 1
-    :param account2: account 2
-    """
-    try:
-        what = yield "Deposit (d) / Transfer (t):"
-        if what not in ("d", "t"):
-            raise TransactionError("Invalid transaction type")
-
-        where = yield "To which account (1/2):"
-        if where not in ("1", "2"):
-            raise TransactionError("Invalid account")
-
-        money = yield "How much:"
-        try:
-            money = int(money)
-        except ValueError:
-            raise TransactionError("Amount must be an integer")
-        if money < 0:
-            raise AccountError("Amount cannot be negative")
-
-        target = account1 if where == "1" else account2
-
-        if what == "d":
-            op = Deposit(money, target)
-        else:
-            if where == "1":
-                op = Transaction(money, account2, account1)
-            else:
-                op = Transaction(money, account1, account2)
-
-        thread = threading.Thread(target=op.execute)
-
-    except Exception as e:
-        print(e)
-
-    thread.start()
-    yield thread
