@@ -2,37 +2,60 @@ import sys
 
 from accounts import AccountList, Account
 from transactions import DepositTransaction, TransferTransaction
+from worker import TransactionWorkerPool
 
 
-def transfer(accounts):
+def transfer(account_list, pool):
+    """
+    Is generator function, which makes Transfer transaction with user input
+    :param account_list: List of accounts
+    :param pool: Pool of workers
+    :return: Nothing
+    """
     yield "Select account to transfer from"
-    from_account = yield from select_account(accounts)
+    from_account = yield from select_account(account_list)
     yield "Select account to transfer to"
-    to_account = yield from select_account(accounts)
+    to_account = yield from select_account(account_list)
 
     amount:int|float = yield "Enter transfer amount:"
 
     t = TransferTransaction(int(amount), from_account, to_account)
-    t.execute()
+    pool.submit(t)
     yield f"Transferred {amount} from account {from_account.get_id()} to account {to_account.get_id()}"
     return
 
-def deposit(accounts):
+def deposit(account_list, pool):
+    """
+    Is generator function, which makes Deposit transaction with user input
+    :param account_list: List of accounts
+    :param pool: Pool of workers
+    :return: Nothing
+    """
     yield "Select deposit account"
-    account = yield from select_account(accounts)
+    account = yield from select_account(account_list)
     amount:int|float = yield "Enter deposit amount:"
 
     t = DepositTransaction(int(amount), account)
-    t.execute()
+    pool.submit(t)
     yield f"Deposited {amount} to account {account.get_id()}"
     return
 
-def select_account(accounts):
-    yield from show_accounts(accounts)
+def select_account(account_list):
+    """
+    Is generator function, which shows accounts and asks user to select one
+    :param account_list: List of accounts
+    :return: selected account
+    """
+    yield from show_accounts(account_list)
     index = yield "Enter index of the account number:"
-    return accounts.get_index(int(index))
+    return account_list.get_index(int(index))
 
 def show_accounts(account_list):
+    """
+    Yields list of accounts
+    :param account_list: List of accounts
+    :return: List of accounts in string format
+    """
     list_print = ""
     i = 1
     for account in account_list:
@@ -40,27 +63,38 @@ def show_accounts(account_list):
         i += 1
     yield list_print
 
-def shutdown(accounts):
-    accounts.export_json("bank_accounts.json")
+def shutdown(account_list, pool):
+    """
+    Shuts down workers and saves accounts to json file
+    :param account_list: List of accounts
+    :param pool: Pool of workers
+    """
+    pool.stop()
+    account_list.export_json("bank_accounts.json")
     sys.exit()
 
 action_list = {
-    0: shutdown,
-    1: deposit,
-    2: transfer,
-    3: show_accounts
+    0: lambda acc_list, pool: shutdown(acc_list, pool),
+    1: lambda acc_list, pool: deposit(acc_list, pool),
+    2: lambda acc_list, pool: transfer(acc_list, pool),
+    3: lambda acc_list, pool: show_accounts(acc_list)
 }
 
 def menu():
+    """
+    Main menu of the program, it controls the whole program flow
+    """
+    pool = TransactionWorkerPool(num_workers=8)
+    pool.start()
     accounts = AccountList()
     accounts.import_json("bank_accounts.json")
     print("Bank IS")
-    print("Actions: 0.Exit, 1. Deposit, 2.Transfer, 3. Show accounts")
 
     while True:
+        print("Actions: 0.Exit, 1. Deposit, 2.Transfer, 3. Show accounts")
         try:
             action = int(input("Enter action: "))
-            gen = action_list[action](accounts)
+            gen = action_list[action](accounts, pool)
 
             item = next(gen)
             while True:

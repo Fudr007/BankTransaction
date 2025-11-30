@@ -14,10 +14,6 @@ class BaseTransaction:
         self.tx_id = hash((amount, time.time()))
 
     def set_amount(self, amount):
-        #if not isinstance(amount, (int, float)):
-        #    raise TransactionError('Amount must be a number')
-        #if isinstance(amount, int):
-        #    amount = float(amount)
         if float(amount) < 0.0:
             raise ValueError('Amount cannot be negative')
         self.amount = amount
@@ -38,7 +34,6 @@ class TransferTransaction(BaseTransaction):
         self.set_from_account(from_account)
         self.set_to_account(to_account)
         self.check_accounts()
-        # include accounts in tx_id for uniqueness
         self.tx_id = hash((from_account.get_id(), to_account.get_id(), self.amount, time.time()))
 
     def set_from_account(self, account):
@@ -56,12 +51,15 @@ class TransferTransaction(BaseTransaction):
             raise TransactionError("Cannot transfer to the same account")
 
     def execute(self):
-        # Deadlock prevention by locking accounts in ID order
+        """
+        Transfers money from one account to another, thread safe and with deadlock prevention
+        :return:
+        """
         acc1, acc2 = sorted([self.from_account, self.to_account], key=lambda x: x.get_id())
         with acc1.lock:
             with acc2.lock:
                 if self.from_account.withdraw(self.amount):
-                    self.to_account.deposit(self.amount)
+                    return self.to_account.deposit(self.amount)
         return True
 
 class DepositTransaction(BaseTransaction):
@@ -80,6 +78,10 @@ class DepositTransaction(BaseTransaction):
         self.to_account = account
 
     def execute(self):
+        """
+        Deposit money into account, thread safe
+        :return: True if everything is fine
+        """
         with self.to_account.lock:
             self.to_account.deposit(self.amount)
             print(f"deposited {self.amount}")

@@ -70,6 +70,10 @@ class Account:
         return True
 
     def to_dict(self):
+        """
+        Transform account to dict format
+        :return: Account in dict format
+        """
         return {
             "acc_id": self._acc_id,
             "balance": self._balance
@@ -77,6 +81,11 @@ class Account:
 
     @staticmethod
     def from_dict(data):
+        """
+        Transform account in dict format to account object
+        :param data: Account in dict format
+        :return: Account in object format
+        """
         return Account(acc_id=data["acc_id"], balance=float(data["balance"]))
 
 
@@ -88,6 +97,11 @@ class AccountList():
         self.accounts[acc.get_id()] = acc
 
     def get_index(self, index):
+        """
+        Returns account with given index
+        :param index: Index of account in the list
+        :return: Account
+        """
         now_i = 1
         for account in self.accounts.values():
             if now_i == index:
@@ -100,6 +114,10 @@ class AccountList():
         return iter(self.accounts.values())
 
     def to_dict(self):
+        """
+        Transform account list to dict
+        :return: Account list in dict format
+        """
         return {
             "accounts": {
                 str(acc_id): acc.to_dict()
@@ -109,6 +127,11 @@ class AccountList():
 
     @staticmethod
     def from_dict(data):
+        """
+        Transform dict account to account list object
+        :param data: Account list in dict format
+        :return: Account list in object format
+        """
         acc_list = AccountList()
         for acc_id, acc_data in data["accounts"].items():
             a = Account.from_dict(acc_data)
@@ -116,11 +139,25 @@ class AccountList():
         return acc_list
 
     def export_json(self, path):
+        """
+        Export account list to json file
+        :param path: Path to json file
+        :return: True if everything is fine
+        """
         with open(path, 'w') as file:
             json.dump(self.to_dict(), file, indent=4)
 
+        return True
+
     def import_json(self, path):
+        """
+        Load account list from json file
+        :param path: Path to json file
+        :return: True if everything is fine
+        """
         with open(path, "r") as file:
             data = json.load(file)
         restored = AccountList.from_dict(data)
         self.accounts = restored.accounts
+
+        return True

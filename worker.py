@@ -1,65 +1,65 @@
 import threading
 import queue
-from accounts import AccountList
-
-class WorkerStopped(Exception):
-    pass
+import time
 
 
-class WorkerPool:
-    def __init__(self, account_list: AccountList, workers_count=4):
-        self.account_list = account_list
-        self.tasks = queue.Queue()
+class TransactionWorkerPool:
+    """
+    Multithreaded worker pool with producer and consumer.
+    """
+
+    def __init__(self, num_workers=2):
+        self.queue = queue.Queue()
+        self.shutdown_event = threading.Event()
+        self.num_workers = num_workers
         self.workers = []
-        self.running = threading.Event()
-        self.running.set()
-
-        for i in range(workers_count):
-            t = threading.Thread(target=self._worker_loop, name=f"worker-{i}", daemon=True)
-            self.workers.append(t)
 
     def start(self):
-        """Spustí všechna vlákna."""
-        for t in self.workers:
+        """
+        Starts all worker threads.
+        """
+        for i in range(self.num_workers):
+            t = threading.Thread(
+                target=self.worker_loop,
+                args=(i,),
+                daemon=True
+            )
+            self.workers.append(t)
             t.start()
 
-    def stop(self):
-        """Zastaví vlákna korektně."""
-        self.running.clear()
 
-        # pošleme None aby se vlákna probudila
-        for _ in self.workers:
-            self.tasks.put(None)
+    def stop(self):
+        """
+        Stops all worker threads and waits for them to finish.
+        """
+        self.shutdown_event.set()
+
+        for _ in range(self.num_workers):
+            self.queue.put(None)
 
         for t in self.workers:
             t.join()
 
-    def add_task(self, task):
+    def submit(self, transaction):
         """
-        Přidá transakci do fronty (producer).
-        Může to být Deposit nebo Transaction.
+        Adds a new transaction/task to the queue.
+        :param transaction: Task to add to the queue.
         """
-        self.tasks.put(task)
+        self.queue.put(transaction)
 
-    def _worker_loop(self):
+    def worker_loop(self):
         """
-        Worker spotřebovává úkoly.
-        Pokud úkol = None → končí.
+        Loop that processes tasks from the queue.
         """
-        while self.running.is_set():
-            task = self.tasks.get()
+        while not self.shutdown_event.is_set():
+            task = self.queue.get()
+
             if task is None:
                 break
 
             try:
-                # Executing task
                 task.execute()
-
             except Exception as e:
-                print(f"[{threading.current_thread().name}] ERROR: {e}")
+                raise e
 
-            finally:
-                self.tasks.task_done()
-
-        # vlákno končí
-        return
+            self.queue.task_done()
