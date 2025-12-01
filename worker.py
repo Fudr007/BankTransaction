@@ -7,7 +7,7 @@ class TransactionWorkerPool:
     Multithreaded worker pool with producer and consumer.
     """
 
-    def __init__(self, num_workers=2):
+    def __init__(self, num_workers=4):
         self.queue = queue.Queue()
         self.shutdown_event = threading.Event()
         self.num_workers = num_workers
@@ -44,6 +44,12 @@ class TransactionWorkerPool:
         :param transaction: Task to add to the queue.
         """
         self.queue.put(transaction)
+
+    def show_queue(self):
+        return_str = ""
+        for i in range(self.queue.qsize()):
+            return_str += str(self.queue.get()) + "\n"
+        return return_str
 
     def worker_loop(self):
         """

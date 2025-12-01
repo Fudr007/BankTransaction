@@ -21,7 +21,7 @@ def transfer(account_list, pool):
 
     t = TransferTransaction(int(amount), from_account, to_account)
     pool.submit(t)
-    yield f"Transferred {amount} from account {from_account.get_id()} to account {to_account.get_id()}"
+    yield f"Transfer transaction {amount} from account {from_account.get_id()} to account {to_account.get_id()} was added to queue"
     return
 
 def deposit(account_list, pool):
@@ -37,7 +37,7 @@ def deposit(account_list, pool):
 
     t = DepositTransaction(int(amount), account)
     pool.submit(t)
-    yield f"Deposited {amount} to account {account.get_id()}"
+    yield f"Deposit transaction {amount} to account {account.get_id()} was added to queue"
     return
 
 def select_account(account_list):
@@ -73,6 +73,14 @@ def make_acc(account_list):
     account_list.add_account(acc)
     yield f"Added account {acc.get_id()} to list of accounts"
 
+def start_transactions(pool):
+    pool.start()
+    yield "Transactions in the queue started executing"
+
+def stop_transactions(pool):
+    pool.stop()
+    yield "Transactions in the queue stopped executing"
+
 def shutdown(account_list, pool):
     """
     Shuts down workers and saves accounts to json file
@@ -88,21 +96,23 @@ action_list = {
     1: lambda acc_list, pool: deposit(acc_list, pool),
     2: lambda acc_list, pool: transfer(acc_list, pool),
     3: lambda acc_list, pool: make_acc(acc_list),
-    4: lambda acc_list, pool: show_accounts(acc_list)
+    4: lambda acc_list, pool: show_accounts(acc_list),
+    5: lambda acc_list, pool: start_transactions(pool),
+    6: lambda acc_list, pool: stop_transactions(pool)
 }
 
 def menu():
     """
     Main menu of the program, it controls the whole program flow
     """
-    pool = TransactionWorkerPool(num_workers=8)
-    pool.start()
+    pool = TransactionWorkerPool()
     accounts = AccountList()
     accounts.import_json("bank_accounts.json")
     print("Bank IS")
 
     while True:
-        print("Actions: 0.Exit, 1. Deposit, 2.Transfer, 3. Create new account, 4. Show accounts")
+        print("Actions: 0.Exit, 1. Deposit, 2.Transfer, 3. Create new account, 4. Show accounts, \n"
+              "5. Start executing transactions, 6. Stop executing transactions")
         try:
             action = int(input("Enter action: "))
             gen = action_list[action](accounts, pool)
