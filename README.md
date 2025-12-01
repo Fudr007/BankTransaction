@@ -1,39 +1,51 @@
 # BankTransaction
 
-**Author:** Petr Valenta  
-**Language:** Python  
-**Description:** A simple threaded bank-transaction with deposits and transfers between accounts, using a generator-based interactive workflow.
+A simple multithreaded bank app with Accounts and Transactions (deposit/transfer), plus a small interactive console UI built with generators.
 
----
+## Features
 
-## 🛠 Features
+- Account model with validation, deposit and withdraw
+- Thread-safe Transfer and Deposit transactions (per-account locks)
+- Worker pool to process queued transactions
+- Generator-based console workflow for user input
 
-- Console-based interactive input
-- `Account` objects, allowing deposits and transfers.  
-- Threaded execution: each operation runs in its own thread, allowing multiple concurrent transactions.  
-- Generator function to guide the user through steps in a clean sequence.  
-- Proper error-handling for invalid inputs (non-integer amounts, negative values, invalid account choice, same account transfers).  
-- Locking in `Transaction.execute` to ensure thread-safe movement of funds between accounts.
+## Project layout
 
----
+- accounts.py — Account and AccountList models
+- transactions.py — DepositTransaction, TransferTransaction
+- worker.py — TransactionWorkerPool
+- user_input.py — generator-based UI helpers and menu()
+- main.py — program entry point invoking menu()
+- tests.py — unit tests for models, transactions and UI generators
 
-## 🛠️ Absoluteness
-- It is just piece of the whole bank transaction system
-- Can be useda as part and scaled for bigger projects
+## Requirements
 
----
+- Python 3.10+ (standard library only)
 
-## ✅ Requirements
+## Running the app
 
-- Python 3.x  
-- No external dependencies beyond standard library (e.g., `threading`, `time`)  
-- Works on Windows, Linux, macOS (console environment)
+On Windows PowerShell:
 
----
+1) Create or edit the JSON with initial accounts (optional). A sample file bank_accounts.json is included.
+2) Run the program:
 
-## 🔧 Installation & Running
+   python .\main.py
 
-1. Clone the repository:
-   ```bash
-   git clone https://github.com/Fudr007/BankTransaction.git
-   cd BankTransaction
+Follow on-screen prompts to create accounts, deposit, transfer, and control the worker pool.
+
+## Running tests
+
+From the project root:
+
+   python -m unittest -v
+
+The tests exercise:
+- Account validation and balance changes
+- DepositTransaction and TransferTransaction execution and validation
+- Concurrency safety for transfers
+- Generator-based user input flows (submitting to a mocked worker pool)
+
+## Notes
+
+- Account balances are stored as float internally. Account.deposit/withdraw currently accept integers; conversions are handled in user_input for interactive flows.
+- The worker pool is optional to run tests; tests mock it when needed.
