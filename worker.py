@@ -2,7 +2,6 @@ import threading
 import queue
 import time
 
-
 class TransactionWorkerPool:
     """
     Multithreaded worker pool with producer and consumer.
@@ -21,7 +20,6 @@ class TransactionWorkerPool:
         for i in range(self.num_workers):
             t = threading.Thread(
                 target=self.worker_loop,
-                args=(i,),
                 daemon=True
             )
             self.workers.append(t)

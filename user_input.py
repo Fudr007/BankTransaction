@@ -63,6 +63,16 @@ def show_accounts(account_list):
         i += 1
     yield list_print
 
+def make_acc(account_list):
+    """
+    Creates new account and adds it to list of accounts
+    :param account_list: List of accounts
+    :return: Information that the action was performed
+    """
+    acc = Account()
+    account_list.add_account(acc)
+    yield f"Added account {acc.get_id()} to list of accounts"
+
 def shutdown(account_list, pool):
     """
     Shuts down workers and saves accounts to json file
@@ -77,7 +87,8 @@ action_list = {
     0: lambda acc_list, pool: shutdown(acc_list, pool),
     1: lambda acc_list, pool: deposit(acc_list, pool),
     2: lambda acc_list, pool: transfer(acc_list, pool),
-    3: lambda acc_list, pool: show_accounts(acc_list)
+    3: lambda acc_list, pool: make_acc(acc_list),
+    4: lambda acc_list, pool: show_accounts(acc_list)
 }
 
 def menu():
@@ -91,7 +102,7 @@ def menu():
     print("Bank IS")
 
     while True:
-        print("Actions: 0.Exit, 1. Deposit, 2.Transfer, 3. Show accounts")
+        print("Actions: 0.Exit, 1. Deposit, 2.Transfer, 3. Create new account, 4. Show accounts")
         try:
             action = int(input("Enter action: "))
             gen = action_list[action](accounts, pool)
